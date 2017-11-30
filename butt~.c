@@ -24,6 +24,8 @@ void butt_assist(t_butt *x, void *b, long m, long a, char *s);
 void butt_float(t_butt *x, double f);
 void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags);
 void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
+void butt_dsp(t_butt *x, t_signal **sp);
+t_int *butt_perform(t_int *w);
 
 
 // global class pointer variable
@@ -32,7 +34,7 @@ static t_class *butt_class = NULL;
 
 //***********************************************************************************************
 
-void ext_main(void *r)
+int C74_EXPORT main()
 {
 	// object initialization, note the use of dsp_free for the freemethod, which is required
 	// unless you need to free allocated memory, in which case you should call dsp_free from
@@ -43,6 +45,7 @@ void ext_main(void *r)
 	class_addmethod(c, (method)butt_float,		"float",	A_FLOAT, 0);
 	class_addmethod(c, (method)butt_dsp64,		"dsp64",	A_CANT, 0);
 	class_addmethod(c, (method)butt_assist,	"assist",	A_CANT, 0);
+    class_addmethod(c, (method)butt_dsp, "dsp",    A_CANT, 0);
 
 	class_dspinit(c);
 	class_register(CLASS_BOX, c);
@@ -116,5 +119,28 @@ void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, doubl
 	// this perform method simply copies the input to the output, offsetting the value
 	while (n--)
 		*outL++ = *inL++ + x->offset;
+}
+
+// registers a function for the 64 bit signal chain in Max
+void butt_dsp(t_butt *x, t_signal **sp)
+{
+    dsp_add(butt_perform, 4, x, sp[0]->s_vec, sp[1]->s_vec, sp[0]->s_n);
+    post("dsp32");
+}
+
+// perform 32bit
+t_int *butt_perform(t_int *w)
+{
+    // transfer values from the object to local variables
+    t_butt *x = (t_butt *)(w[1]);   // object pointer
+    float *entree = (float *)(w[2]);    // input pointer
+    float *sortie = (float *)(w[3]);    // output pointer
+    int n = (int)(w[4]);
+    
+    while (n--)
+        *sortie++ = *entree++ + x->offset;
+    
+    // you have to return the NEXT pointer in the array OR MAX WILL CRASH
+    return w + 5;
 }
 
