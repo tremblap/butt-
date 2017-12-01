@@ -3,7 +3,7 @@
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
 //  remove altivec
 //  change RGN and inline
-//  typecase sale properly
+//  typecasted all the variables with bit depths certainty
 
 static uint32_t jflone = 0x3f800000;
 static uint32_t jflmsk = 0x007fffff;
@@ -15,21 +15,21 @@ double const temp_ln=0.34657359027997265471;
 
 // struct to represent the object's state
 typedef struct butt {
-    t_pxobject b_ob;         // MSP object structure
-    double b_freq;           // non-local variable : filter frequency
-    double b_largeur;        // non-local variable : filter bandwidth
-    t_float b_sale;           // non-local variable : dirty factor
-    short b_type;            // non-local variable : filter type
-    double b_piDsr;          // non-local variable : 2π/sr
-    double b_in1;            // non-local variable : filter buffer in1
-    double b_in2;            // non-local variable : filter buffer in2
-    double b_ou1;            // non-local variable : filter buffer ou1
-    double b_ou2;            // non-local variable : filter buffer ou2
-    double b_b0a0;           // non-local variable : filter coeff b0a0
-    double b_b1a0;           // non-local variable : filter coeff b1a0
-    double b_b2a0;           // non-local variable : filter coeff b2a0
-    double b_a1a0;           // non-local variable : filter coeff a1a0
-    double b_a2a0;           // non-local variable : filter coeff a2a0
+    t_pxobject b_ob;            // MSP object structure
+    t_double b_freq;            // non-local variable : filter frequency
+    t_double b_largeur;         // non-local variable : filter bandwidth
+    t_float b_sale;             // non-local variable : dirty factor
+    short b_type;               // non-local variable : filter type
+    t_double b_piDsr;           // non-local variable : 2π/sr
+    t_double b_in1;             // non-local variable : filter buffer in1
+    t_double b_in2;             // non-local variable : filter buffer in2
+    t_double b_ou1;             // non-local variable : filter buffer ou1
+    t_double b_ou2;             // non-local variable : filter buffer ou2
+    t_double b_b0a0;            // non-local variable : filter coeff b0a0
+    t_double b_b1a0;            // non-local variable : filter coeff b1a0
+    t_double b_b2a0;            // non-local variable : filter coeff b2a0
+    t_double b_a1a0;            // non-local variable : filter coeff a1a0
+    t_double b_a2a0;            // non-local variable : filter coeff a2a0
 } t_butt;
 
 
@@ -265,6 +265,11 @@ void butt_type(t_butt *x, t_symbol *s)
         x->b_type = 3;
         butt_coeff(x);
     }
+    else if (s == gensym("allpass"))
+    {
+        x->b_type = 4;
+        butt_coeff(x);
+    }
     else
         post("butt~: unknown filter type");
 }
@@ -308,7 +313,6 @@ void butt_coeff(t_butt *x)                                            // renders
 {
     double alpha, omega, tsin, tcos, a0, a1, a2, b0, b1, b2;
     
-    
     omega = (x->b_piDsr) * (x->b_freq);
     
     tsin = sin(omega);
@@ -351,14 +355,22 @@ void butt_coeff(t_butt *x)                                            // renders
             a1 = -2.0 * tcos;
             a2 = 1.0 - alpha;
             break;
-            
+        case 4:                            // allpass
+            b0=1.0-alpha;
+            b1=-2.0*tcos;
+            b2=1.0+alpha;
+            a0=1.0+alpha;
+            a1=-2.0*tcos;
+            a2=1.0-alpha;
+            break;
     }
     
-    x->b_b0a0 = b0/a0;                                                    // write the rendered values
-    x->b_b1a0 = b1/a0;
-    x->b_b2a0 = b2/a0;
-    x->b_a1a0 = a1/a0;
-    x->b_a2a0 = a2/a0;
+    a0 = 1.0/a0;
+    x->b_b0a0 = b0 * a0;                                                    // write the rendered values
+    x->b_b1a0 = b1 * a0;
+    x->b_b2a0 = b2 * a0;
+    x->b_a1a0 = a1 * a0;
+    x->b_a2a0 = a2 * a0;
 }
 
 void butt_clear(t_butt *x)
@@ -424,8 +436,7 @@ t_int *butt_perf_const(t_int *w)
     {
         in0 = *entree++;
         yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
-//        *sortie++ = yn;
-        *sortie++ = 1. + (butt_noise() * sale);
+        *sortie++ = yn;
         in2 = in1 * (1. + (butt_noise() * sale)); // adding some dirty to the buffers!
         in1 = in0 * (1. + (butt_noise() * sale));
         ou2 = ou1 * (1. + (butt_noise() * sale));
@@ -467,8 +478,7 @@ void butt_perf_const64(t_butt *x, t_object *dsp64, double **ins, long numins, do
     {
         in0 = *entree++;
         yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
-        //        *sortie++ = yn;
-        *sortie++ = 1. + (butt_noise() * sale);
+        *sortie++ = yn;
         in2 = in1 * (1. + (butt_noise() * sale)); // adding some dirty to the buffers!
         in1 = in0 * (1. + (butt_noise() * sale));
         ou2 = ou1 * (1. + (butt_noise() * sale));
