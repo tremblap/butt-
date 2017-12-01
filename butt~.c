@@ -2,9 +2,12 @@
 //    by Pierre Alexandre Tremblay
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
 //  remove altivec
-//
+//  change RGN
+//  typecase sale properly
+
 static uint32_t jflone = 0x3f800000;
 static uint32_t jflmsk = 0x007fffff;
+double const temp_ln=0.34657359027997265471;
 
 #include "math.h"
 #include "ext.h"
@@ -15,7 +18,7 @@ typedef struct butt {
     t_pxobject b_ob;         // MSP object structure
     double b_freq;           // non-local variable : filter frequency
     double b_largeur;        // non-local variable : filter bandwidth
-    double b_sale;           // non-local variable : dirty factor * kOneOverMaxULong
+    t_float b_sale;           // non-local variable : dirty factor
     short b_type;            // non-local variable : filter type
     double b_piDsr;          // non-local variable : 2π/sr
     double b_in1;            // non-local variable : filter buffer in1
@@ -48,7 +51,6 @@ void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, doubl
 
 void butt_coeff(t_butt *x);                                        // coeff rendering
 inline t_float butt_noise();
-
 static uint32_t semance;                                            // scalar PRNG seed
 
 // global class pointer variable
@@ -298,7 +300,7 @@ void butt_sale(t_butt *x, double s)
         butt_sale(x, 0.);
     } else
     {
-        x->b_sale = s;
+        x->b_sale = (t_float)s;
     }
 }
 
@@ -306,7 +308,6 @@ void butt_coeff(t_butt *x)                                            // renders
 {
     double alpha, omega, tsin, tcos, a0, a1, a2, b0, b1, b2;
     
-    double const temp_ln=0.34657359027997265471;
     
     omega = (x->b_piDsr) * (x->b_freq);
     
@@ -395,7 +396,7 @@ t_int *butt_perf_const(t_int *w)
     if (x->b_ob.z_disabled)                // if the object is muted, bypass everything!
         goto out;
     
-    double sale = x->b_sale;            // dirtiness / kOneOverMaxULong
+    t_float sale = x->b_sale;            // dirtiness / kOneOverMaxULong
     double in1 = x->b_in1;                // filter buffer in1 and so on...
     double in2 = x->b_in2;
     double ou1 = x->b_ou1;
