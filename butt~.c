@@ -1,9 +1,7 @@
 //    Butt~ - a dirty filter based on a basic biquad...
 //    by Pierre Alexandre Tremblay
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
-//  remove altivec
-//  change RGN and inline
-//  typecasted all the variables with bit depths certainty
+//  v3 - remove altivec, change RGN and inline it, typecasted all the variables with bit depths certainty, add the optimisation from the JAVA and gen~. This was made possible within the FluCoMa project, funded by the ERC
 
 static uint32_t jflone = 0x3f800000;
 static uint32_t jflmsk = 0x007fffff;
