@@ -2,7 +2,7 @@
 //    by Pierre Alexandre Tremblay
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
 //  remove altivec
-//  change RGN
+//  change RGN and inline
 //  typecase sale properly
 
 static uint32_t jflone = 0x3f800000;
@@ -396,7 +396,7 @@ t_int *butt_perf_const(t_int *w)
     if (x->b_ob.z_disabled)                // if the object is muted, bypass everything!
         goto out;
     
-    t_float sale = x->b_sale;            // dirtiness / kOneOverMaxULong
+    t_float sale = x->b_sale;            // dirtiness
     double in1 = x->b_in1;                // filter buffer in1 and so on...
     double in2 = x->b_in2;
     double ou1 = x->b_ou1;
@@ -416,11 +416,11 @@ t_int *butt_perf_const(t_int *w)
         in0 = *entree++;
         yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
 //        *sortie++ = yn;
-        *sortie++ = 1 + (butt_noise() * sale);
-        in2 = in1 * (1 + (butt_noise() * sale)); // adding some dirty to the buffers!
-        in1 = in0 * (1 + (butt_noise() * sale));
-        ou2 = ou1 * (1 + (butt_noise() * sale));
-        ou1 = yn * (1 + (butt_noise() * sale));
+        *sortie++ = 1. + (butt_noise() * sale);
+        in2 = in1 * (1. + (butt_noise() * sale)); // adding some dirty to the buffers!
+        in1 = in0 * (1. + (butt_noise() * sale));
+        ou2 = ou1 * (1. + (butt_noise() * sale));
+        ou1 = yn * (1. + (butt_noise() * sale));
     }
     
     x->b_in1 = in1;                // write back in1 and so on...
@@ -447,13 +447,15 @@ void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, doubl
     t_double *inL = ins[0];        // we get audio for each inlet of the object from the **ins argument
     t_double *outL = outs[0];    // we get audio for each outlet of the object from the **outs argument
     int n = sampleframes;
-    
+
+    t_float sale = x->b_sale;            // dirtiness
+
     // this perform method simply copies the input to the output, offsetting the value
     while (n--)
-        *outL++ = *inL++ + x->b_freq;
+        *outL++ = 1. + (butt_noise() * sale);
 }
 
-t_float butt_noise()
+inline t_float butt_noise()
 {
     union  {
         uint32_t thelong;
