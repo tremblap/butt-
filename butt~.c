@@ -3,6 +3,8 @@
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
 //  remove altivec
 //
+static uint32_t jflone = 0x3f800000;
+static uint32_t jflmsk = 0x007fffff;
 
 #include "math.h"
 #include "ext.h"
@@ -45,9 +47,9 @@ void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, lon
 void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
 
 void butt_coeff(t_butt *x);                                        // coeff rendering
+t_float butt_noise();
 
-const double kOneOverMaxULong = 1.0 / 4294967296.0;                // unsigned long PRNG to float (scalar) once for good!
-static unsigned int semance;                                    // scalar PRNG seed
+static uint32_t semance;                                            // scalar PRNG seed
 
 // global class pointer variable
 static t_class *butt_class = NULL;
@@ -296,7 +298,7 @@ void butt_sale(t_butt *x, double s)
         butt_sale(x, 0.);
     } else
     {
-        x->b_sale = s * kOneOverMaxULong;                    // since it is a DOUBLE, I can divide my LC-RNG here
+        x->b_sale = s;
     }
 }
 
@@ -413,7 +415,7 @@ t_int *butt_perf_const(t_int *w)
         in0 = *entree++;
         yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
 //        *sortie++ = yn;
-        *sortie++ = (1. - (sale * (semance = semance * 1664525 + 1013904223)));
+        *sortie++ = 1 + (butt_noise() * sale);
         in2 = in1 * (1. - (sale * (semance = semance * 1664525 + 1013904223))); // adding some dirty to the buffers!
         in1 = in0 * (1. - (sale * (semance = semance * 1664525 + 1013904223)));
         ou2 = ou1 * (1. - (sale * (semance = semance * 1664525 + 1013904223)));
@@ -450,4 +452,17 @@ void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, doubl
         *outL++ = *inL++ + x->b_freq;
 }
 
+t_float butt_noise()
+{
+    union  {
+        uint32_t thelong;
+        t_float thefloat;
+    } itemp;
+    
+    semance = 1664525L * semance + 1013904223L;
+    
+    itemp.thelong = jflone | (jflmsk & semance);
+    
+    return(itemp.thefloat - 2);
+}
 
