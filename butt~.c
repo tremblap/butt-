@@ -47,7 +47,7 @@ void butt_clear(t_butt *x);                                        // clear buff
 void butt_dsp(t_butt *x, t_signal **sp);                        // dsp call
 t_int *butt_perf_const(t_int *w);                                // scalar dsp perf routine
 void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags);
-void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
+void butt_perf_const64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
 
 void butt_coeff(t_butt *x);                                        // coeff rendering
 inline t_float butt_noise();
@@ -374,14 +374,22 @@ void butt_clear(t_butt *x)
 void butt_dsp(t_butt *x, t_signal **sp)
 {
     x->b_piDsr = (2. * PI) / sp[0]->s_sr;                // sets the  2 π / sampling_rate constant for this instantiation of the dsp chain
-    
     butt_coeff(x);                                        // renders the coefficients
-    
     butt_clear(x);                                        // clears the audio buffers
 
     dsp_add(butt_perf_const, 4, x, sp[0]->s_vec, sp[1]->s_vec, sp[0]->s_n);
-
     post("dsp32");
+}
+
+// registers a function for the signal chain in Max
+void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags)
+{
+    x->b_piDsr = (2. * PI) / samplerate;                // sets the  2 π / sampling_rate constant for this instantiation of the dsp chain
+    butt_coeff(x);                                        // renders the coefficients
+    butt_clear(x);                                        // clears the audio buffers
+
+    object_method(dsp64, gensym("dsp_add64"), x, butt_perf_const64, 0, NULL);
+    post("dsp64");
 }
 
 // perform 32bit
@@ -389,8 +397,9 @@ t_int *butt_perf_const(t_int *w)
 {
     // transfer values from the object to local variables
     t_butt *x = (t_butt *)(w[1]);        // object pointer
-    float *entree = (float *)(w[2]);    // input pointer
-    float *sortie = (float *)(w[3]);    // output pointer
+    
+    t_float *entree = (float *)(w[2]);    // input pointer
+    t_float *sortie = (float *)(w[3]);    // output pointer
     long n = w[4];                        // vector size
     
     if (x->b_ob.z_disabled)                // if the object is muted, bypass everything!
@@ -432,27 +441,44 @@ out:
     return (w + 5);                // return the next pointer
 }
 
-// registers a function for the signal chain in Max
-void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags)
+// perform 64bit
+void butt_perf_const64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam)
 {
-    post("dsp64");
+    t_double *entree = ins[0];    // input pointer
+    t_double *sortie = outs[0];    // output pointer
+    int n = sampleframes;                        // vector size
     
-    object_method(dsp64, gensym("dsp_add64"), x, butt_perform64, 0, NULL);
-}
-
-
-// this is the 64-bit perform method audio vectors
-void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam)
-{
-    t_double *inL = ins[0];        // we get audio for each inlet of the object from the **ins argument
-    t_double *outL = outs[0];    // we get audio for each outlet of the object from the **outs argument
-    int n = sampleframes;
-
     t_float sale = x->b_sale;            // dirtiness
-
-    // this perform method simply copies the input to the output, offsetting the value
+    double in1 = x->b_in1;                // filter buffer in1 and so on...
+    double in2 = x->b_in2;
+    double ou1 = x->b_ou1;
+    double ou2 = x->b_ou2;
+    double b0a0 = x->b_b0a0;
+    double b1a0 = x->b_b1a0;
+    double b2a0 = x->b_b2a0;
+    double a1a0 = x->b_a1a0;
+    double a2a0 = x->b_a2a0;
+    
+    double in0, yn;
+    
+    // going through the samples
+    
     while (n--)
-        *outL++ = 1. + (butt_noise() * sale);
+    {
+        in0 = *entree++;
+        yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
+        //        *sortie++ = yn;
+        *sortie++ = 1. + (butt_noise() * sale);
+        in2 = in1 * (1. + (butt_noise() * sale)); // adding some dirty to the buffers!
+        in1 = in0 * (1. + (butt_noise() * sale));
+        ou2 = ou1 * (1. + (butt_noise() * sale));
+        ou1 = yn * (1. + (butt_noise() * sale));
+    }
+    
+    x->b_in1 = in1;                // write back in1 and so on...
+    x->b_in2 = in2;
+    x->b_ou1 = ou1;
+    x->b_ou2 = ou2;
 }
 
 inline t_float butt_noise()
