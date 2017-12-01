@@ -47,7 +47,7 @@ void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, lon
 void butt_perform64(t_butt *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
 
 void butt_coeff(t_butt *x);                                        // coeff rendering
-t_float butt_noise();
+inline t_float butt_noise();
 
 static uint32_t semance;                                            // scalar PRNG seed
 
