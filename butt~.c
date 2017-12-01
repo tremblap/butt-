@@ -388,7 +388,6 @@ void butt_dsp(t_butt *x, t_signal **sp)
     butt_clear(x);                                        // clears the audio buffers
 
     dsp_add(butt_perf_const, 4, x, sp[0]->s_vec, sp[1]->s_vec, sp[0]->s_n);
-    post("dsp32");
 }
 
 // registers a function for the signal chain in Max
@@ -399,7 +398,6 @@ void butt_dsp64(t_butt *x, t_object *dsp64, short *count, double samplerate, lon
     butt_clear(x);                                        // clears the audio buffers
 
     object_method(dsp64, gensym("dsp_add64"), x, butt_perf_const64, 0, NULL);
-    post("dsp64");
 }
 
 // perform 32bit
