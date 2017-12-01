@@ -412,7 +412,8 @@ t_int *butt_perf_const(t_int *w)
     {
         in0 = *entree++;
         yn = b0a0*in0 + b1a0*in1 + b2a0*in2 - a1a0*ou1 - a2a0*ou2;
-        *sortie++ = yn;
+//        *sortie++ = yn;
+        *sortie++ = (1. - (sale * (semance = semance * 1664525 + 1013904223)));
         in2 = in1 * (1. - (sale * (semance = semance * 1664525 + 1013904223))); // adding some dirty to the buffers!
         in1 = in0 * (1. - (sale * (semance = semance * 1664525 + 1013904223)));
         ou2 = ou1 * (1. - (sale * (semance = semance * 1664525 + 1013904223)));
