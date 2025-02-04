@@ -1,7 +1,7 @@
 //    Butt~ - a dirty filter based on a basic biquad...
 //    by Pierre Alexandre Tremblay
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
-//  v3 - remove altivec, change RGN and inline it, typecasted all the variables with bit depths certainty, add the optimisation from the JAVA and gen~. This was made possible within the FluCoMa project, funded by the ERC
+//  v3 - remove altivec, change RGN and inlined it, typecasted all the variables with bit depths certainty, add the optimisation from the JAVA and gen~. This was made possible within the FluCoMa project, funded by the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 725899)
 
 static uint32_t jflone = 0x3f800000;
 static uint32_t jflmsk = 0x007fffff;
@@ -17,7 +17,7 @@ typedef struct butt {
     t_double b_freq;            // non-local variable : filter frequency
     t_double b_largeur;         // non-local variable : filter bandwidth
     t_float b_sale;             // non-local variable : dirty factor
-    short b_type;               // non-local variable : filter type
+    uint8_t b_type;               // non-local variable : filter type
     t_double b_piDsr;           // non-local variable : 2π/sr
     t_double b_in1;             // non-local variable : filter buffer in1
     t_double b_in2;             // non-local variable : filter buffer in2
@@ -211,8 +211,6 @@ void *butt_creation(t_symbol *s, long argc, t_atom *argv)
 
 }
 
-
-// NOT CALLED!, we use dsp_free for a generic free function
 void *butt_liberation(t_butt *x)
 {
     dsp_free((t_pxobject *)x);
