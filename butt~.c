@@ -3,13 +3,13 @@
 //  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website
 //  v3 - remove altivec, change RGN and inlined it, typecasted all the variables with bit depths certainty, add the optimisation from the JAVA and gen~. This was made possible within the FluCoMa project, funded by the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 725899)
 
-static uint32_t jflone = 0x3f800000;
-static uint32_t jflmsk = 0x007fffff;
-double const temp_ln=0.34657359027997265471;
-
 #include "math.h"
 #include "ext.h"
 #include "z_dsp.h"
+
+static uint32_t jflone = 0x3f800000;
+static uint32_t jflmsk = 0x007fffff;
+double const temp_ln=0.34657359027997265471;
 
 // struct to represent the object's state
 typedef struct butt {
