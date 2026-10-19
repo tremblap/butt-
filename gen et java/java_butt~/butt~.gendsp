@@ -1,0 +1,169 @@
+{
+	"patcher" : 	{
+		"fileversion" : 1,
+		"appversion" : 		{
+			"major" : 7,
+			"minor" : 3,
+			"revision" : 1,
+			"architecture" : "x86",
+			"modernui" : 1
+		}
+,
+		"rect" : [ 107.0, 78.0, 855.0, 1084.0 ],
+		"editing_bgcolor" : [ 0.9, 0.9, 0.9, 1.0 ],
+		"bglocked" : 0,
+		"openinpresentation" : 0,
+		"default_fontsize" : 12.0,
+		"default_fontface" : 0,
+		"default_fontname" : "Arial",
+		"gridonopen" : 1,
+		"gridsize" : [ 15.0, 15.0 ],
+		"gridsnaponopen" : 1,
+		"objectsnaponopen" : 1,
+		"statusbarvisible" : 2,
+		"toolbarvisible" : 1,
+		"lefttoolbarpinned" : 0,
+		"toptoolbarpinned" : 0,
+		"righttoolbarpinned" : 0,
+		"bottomtoolbarpinned" : 0,
+		"toolbars_unpinned_last_save" : 0,
+		"tallnewobj" : 0,
+		"boxanimatetime" : 200,
+		"enablehscroll" : 1,
+		"enablevscroll" : 1,
+		"devicewidth" : 0.0,
+		"description" : "",
+		"digest" : "",
+		"tags" : "",
+		"style" : "",
+		"subpatcher_template" : "",
+		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-5",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 892.0, 14.0, 276.0, 22.0 ],
+					"style" : "",
+					"text" : "in 4 @comment dirt @min 0. @max 1 @default 0."
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-3",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 554.0, 14.0, 321.0, 22.0 ],
+					"style" : "",
+					"text" : "in 3 @comment bw @min 0.01 @max 100 @default 0.666"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-2",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 226.0, 14.0, 313.0, 22.0 ],
+					"style" : "",
+					"text" : "in 2 @comment freq @min 1 @max 22000 @default 666"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"code" : "//\tButt~ - a dirty filter based on a basic biquad...\n//\tby Pierre Alexandre Tremblay\n//  v.2 - optimised at the University of Huddersfield, thanks to the hints and discussions with Peter Castine, Alex Harker, Kit Clayton and Apple Dev Website\n//  v.3 in gen~\r\n//  v.3.01 tweaked thanks to Pete Dowling and Graham Wakefield\r\n//  v.3.1 with independant inputs to mimick the external\n//  v.3.1.1 with the right noise to match the external (caped at 1.0 so positive noise only)\n//  v.3.1.2 added allpass\n\n// the methods\n\n//Param freq(666,min=1,max=20000);\r\n//Param bw(0.666,min=0.01,max=100);\n//Param dirt(0,min=0,max=1);\nParam type(3, min=1, max=5);\n\n// the delays\n\nHistory b_in1, b_in2, b_ou1, b_ou2;\r\n\r\n// the inputs\nb_in0 = in1;\r\nfreq = in2; //(666,min=1,max=20000);\nbw = in3; //(0.666,min=0.01,max=100);\ndirt = in4 * 0.5; //(0,min=0,max=1);\n\n// constants\n\ntemp_ln=0.34657359027997265471;\nb_piDsr= twopi / samplerate;\n\r\n// setup\r\n\r\nb0, b1, b2, a0, a1, a2\t= 0;\ntyp = int(type);\r\n\n// process bandwidth\nomega = b_piDsr * freq;\ntsin = sin(omega);\ntcos = cos(omega);\nalpha = tsin * sinh(temp_ln * bw * omega / tsin);\t\t// bandwidth\n\n// then process coefficients\nif(typ == 1) {\n\tb0=(1.0-tcos)/2.0;\n\tb1=1.0-tcos;\n\tb2=(1.0-tcos)/2.0;\n\ta0=1.0+alpha;\n\ta1=-2.0*tcos;\n\ta2=1.0-alpha;\n} else if(typ ==  2) {\n\tb0 = (1.0 + tcos) /2.0;\n\tb1 = -(1.0 + tcos);\n\tb2 = (1.0 + tcos) /2.0;\n\ta0 = 1.0 + alpha;\n\ta1 = -2.0 * tcos;\n\ta2 = 1.0 - alpha;\n} else if (typ == 3) {\n\tb0=alpha;\n\tb1=0.0;\n\tb2=-alpha;\n\ta0=1.0+alpha;\n\ta1=-2.0*tcos;\n\ta2=1.0-alpha;\n} else if (typ == 4) {\r\n    b0 = 1.0;\n\tb1 = -2.0 * tcos;\n    b2 = 1.0;\n\ta0 = 1.0 + alpha;\n\ta1 = -2.0 * tcos;\n    a2 = 1.0 - alpha;\n} else {\n\tb0=1.0-alpha; \n\tb1=-2.0*tcos; \n\tb2=1.0+alpha; \n\ta0=1.0+alpha; \n\ta1=-2.0*tcos; \n\ta2=1.0-alpha;\r\n}\n\t\t\t\na0m\t\t= 1  / a0;\t\t// '*' is still much much cheeper than '/', even in gen~\r\nb0a0\t= b0 * a0m;\nb1a0\t= b1 * a0m;\nb2a0\t= b2 * a0m;\na1a0\t= a1 * a0m;\na2a0\t= a2 * a0m;\n\nout1 = b0a0*b_in0 + b1a0*b_in1 + b2a0*b_in2 - a1a0*b_ou1 - a2a0*b_ou2;\n\nb_in2 = b_in1 * (1. - (dirt * noise()) - dirt); // adding some dirty to the buffers!\nb_in1 = b_in0 * (1. - (dirt * noise()) - dirt);\nb_ou2 = b_ou1 * (1. - (dirt * noise()) - dirt);\nb_ou1 = out1 * (1. - (dirt * noise()) - dirt);",
+					"fontface" : 0,
+					"fontname" : "Arial",
+					"fontsize" : 12.0,
+					"id" : "obj-7",
+					"maxclass" : "codebox",
+					"numinlets" : 4,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 50.0, 42.0, 834.0, 1003.0 ],
+					"style" : ""
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-1",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 50.0, 14.0, 153.0, 22.0 ],
+					"style" : "",
+					"text" : "in 1 @comment audioinput"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-4",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 50.0, 1052.0, 37.0, 22.0 ],
+					"style" : "",
+					"text" : "out 1"
+				}
+
+			}
+ ],
+		"lines" : [ 			{
+				"patchline" : 				{
+					"destination" : [ "obj-7", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-1", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-7", 1 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-2", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-7", 2 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-3", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-7", 3 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-5", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-4", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-7", 0 ]
+				}
+
+			}
+ ]
+	}
+
+}
