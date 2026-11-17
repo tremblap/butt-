@@ -5,10 +5,9 @@ if(NOT SDK)
   message(FATAL_ERROR "Pass -DSDK=/path/to/max-sdk-base")
 endif()
 
-# Tilde-free name for generated files and identifiers (butt~ -> butt_tilde)
 string(REPLACE "~" "_tilde" EXT_SAFE_NAME "${PROJECT_NAME}")
 
-set(EXT_VERSION   "2.3.1" CACHE STRING "External version (major.minor.patch)")
+set(EXT_VERSION   "3.2.0" CACHE STRING "External version (major.minor.patch)")
 set(EXT_COPYRIGHT "copyright P.A.Tremblay 2026")
 
 set(C74_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
